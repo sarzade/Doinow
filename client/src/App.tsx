@@ -22,6 +22,9 @@ import { useStore } from './store/useStore';
 
 const LIST_COLORS = ['#7c3aed', '#0ea5e9', '#22c55e', '#f59e0b', '#ef4444', '#ec4899'];
 
+// نسخه‌ای که موقع Release در CI تزریق می‌شود (VITE_APP_VERSION) — لوکال خالی است
+const APP_VERSION = (import.meta.env.VITE_APP_VERSION as string | undefined) || null;
+
 type DetailState =
   | { mode: 'closed' }
   | { mode: 'new'; listId: string | null; presetDue?: string | null }
@@ -704,6 +707,7 @@ function SettingsView() {
         </div>
         <div className="mt-1 text-xs text-gray-400">
           {s.offline ? 'وضعیت: آفلاین (تغییرات در صف سینک)' : 'وضعیت: متصل'}
+          {APP_VERSION ? ` • نسخه اپ: ${APP_VERSION}` : ''}
         </div>
         <div className="mt-2 flex gap-2">
           <button

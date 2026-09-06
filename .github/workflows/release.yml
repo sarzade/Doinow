@@ -1,0 +1,179 @@
+name: Release (APK + iOS)
+
+# انتشار دستی نسخه جدید:
+# از تب Actions گزینه Release را اجرا کن.
+# نسخه به‌صورت خودکار یکی زیاد می‌شود: v1.0، v1.1، v1.2 ...
+# هر دو فایل به Release الصاق می‌شوند + یادداشت انتشار فارسی.
+
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: 'یادداشت اضافه برای این نسخه (اختیاری)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      next: ${{ steps.calc.outputs.next }}
+    steps:
+      - name: Checkout (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate next version (v1.x)
+        id: calc
+        run: |
+          git fetch --tags --force
+          LAST=$(git tag -l 'v1.*' | sort -V | tail -n 1)
+          if [ -z "$LAST" ]; then
+            NEXT="v1.0"
+          else
+            X="${LAST#v1.}"
+            NEXT="v1.$((X + 1))"
+          fi
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "Next version: $NEXT (last: ${LAST:-none})"
+
+  build-android:
+    needs: version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build web
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_APP_VERSION: ${{ needs.version.outputs.next }}
+
+      - name: Capacitor sync
+        run: npx cap sync android
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
+        working-directory: client/android
+
+      - name: Rename APK with version
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk "Doinow-${{ needs.version.outputs.next }}-debug.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: client/Doinow-${{ needs.version.outputs.next }}-debug.apk
+
+  build-ios:
+    needs: version
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build web
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_APP_VERSION: ${{ needs.version.outputs.next }}
+
+      - name: Capacitor sync iOS
+        run: npx cap sync ios
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer && xcodebuild -version
+
+      - name: Build for Simulator (no signing)
+        run: >
+          xcodebuild
+          -workspace ios/App/App.xcworkspace
+          -scheme App
+          -configuration Debug
+          -sdk iphonesimulator
+          -derivedDataPath build/derivedData
+          CODE_SIGNING_ALLOWED=NO
+          build
+
+      - name: Zip Simulator app
+        run: ditto -c -k --sequesterRsrc --keepParent "build/derivedData/Build/Products/Debug-iphonesimulator/App.app" "Doinow-${{ needs.version.outputs.next }}-ios-simulator.zip"
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: client/Doinow-${{ needs.version.outputs.next }}-ios-simulator.zip
+
+  release:
+    needs: [version, build-android, build-ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-files
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.next }}
+          name: 'Doinow ${{ needs.version.outputs.next }}'
+          generate_release_notes: true
+          body: |
+            ## دوینو ${{ needs.version.outputs.next }}
+
+            ### فایل‌ها
+            - `Doinow-${{ needs.version.outputs.next }}-debug.apk` ← نصب مستقیم روی گوشی اندروید
+            - `Doinow-${{ needs.version.outputs.next }}-ios-simulator.zip` ← فقط شبیه‌ساز Xcode (بدون امضا؛ روی آیفون واقعی نصب نمی‌شود)
+
+            ${{ inputs.notes }}
+
+            ### نصب اندروید
+            ۱. فایل APK را دانلود کن
+            ۲. روی گوشی بازش کن و نصب را تایید کن (اگر اخطار «منبع ناشناس» داد، اجازه بده)
+          files: |
+            dist-files/*
