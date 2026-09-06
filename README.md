@@ -1,68 +1,133 @@
+<div align="center">
+
 # دوینو (Doinow)
 
-برنامه مدیریت کارهای روزانه — فارسی و راست‌چین، شبیه Any.do، اختصاصی تو.
-`com.doinow.app` — خروجی اندروید (APK) با Capacitor، بیلد خودکار در گیت‌هاب.
+**برنامه مدیریت کارهای روزانه — فارسی، راست‌چین، شبیه Any.do، با سرور شخصی خودت**
 
-## ساختار
+![Android](https://img.shields.io/badge/Android-APK-3DDC84?style=flat-square&logo=android&logoColor=white)
+![iOS](https://img.shields.io/badge/iOS-Capacitor-000000?style=flat-square&logo=ios&logoColor=white)
+![CI](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-7c3aed?style=flat-square)
 
-```
-doinow/
-├── client/   → فرانت (React + Vite + TS + Tailwind + Zustand) + android/
-├── server/   → بک‌اند اختصاصی (Node + Fastify + Prisma + SQLite)
-├── infra/    → Caddyfile برای api.doinow.ir
-└── .github/workflows/ → بیلد APK + دیپلوی سرور
-```
+</div>
 
-## اجرای لوکال (الان)
+---
 
-پیش‌نیاز: Node 20+
+## ✨ قابلیت‌ها
 
-**۱. سرور:**
+- ✅ تسک، لیست، زیرکار، تگ، اولویت و یادداشت
+- 🔁 **تکرار پیشرفته** — روزانه / هفتگی (چندروزه، مثل شنبه و چهارشنبه) / ماهانه (روز ماه یا روز هفته‌ای مثل دومین دوشنبه) / سالانه، هر N بار، با ساعت دقیق، تاریخ پایان یا تعداد دفعات، و انتخاب «معوق بماند یا فقط وقوع بعدی» — مثلا *هر دوشنبه ساعت ۱۴:۰۰*
+- 📅 تقویم **شمسی** (با زیرنویس میلادی): نمای ماهانه + نمای هفته‌ای ساعتی با خط «الان»
+- 🌙 تم تیره پیش‌فرض (روشن هم دارد)
+- 📌 روز من، ۷ روز آینده، همه تسک‌ها (امروز / فردا / آینده / یه‌روز / انجام‌شده)
+- 🔍 جستجو در عنوان، یادداشت و تگ + مرتب‌سازی و فیلتر
+- 📴 **آفلاین-اول** — بدون اینترنت کار می‌کند، با وصل شدن خودکار سینک می‌شود
+- 🔔 یادآور محلی (نوتیفیکیشن گوشی)، حتی برای وقوع‌های تکرارشونده
+- 💾 بکاپ JSON از داخل تنظیمات اپ
+- 🔒 داده‌ها روی **سرور شخصی خودت** — بدون وابستگی به سرویس خارجی
+
+> 📸 اسکرین‌شات‌ها به‌زودی اینجا اضافه می‌شود.
+
+---
+
+## 📲 دانلود و نصب
+
+| پلتفرم | وضعیت | توضیح |
+| --- | --- | --- |
+| 🤖 اندروید (APK) | ✅ آماده نصب | از تب **Actions** گیت‌هاب، آرتیفکت `Doinow-debug-apk` را دانلود و روی گوشی نصب کن |
+| 🍎 آیفون (IPA) | ⚠️ بدون امضا | خروجی CI فعلا **اپ شبیه‌ساز** است؛ نصب روی آیفون واقعی به حساب Apple Developer و امضا نیاز دارد (به‌زودی) |
+
+هر پوش به شاخه `main` هر دو بیلد را خودکار می‌سازد.
+
+---
+
+## 🚀 شروع سریع (لوکال)
+
+پیش‌نیاز: **Node 20+**
+
+**۱. سرور** — http://localhost:3000
 
 ```bash
 cd server
 npm install
 npx prisma migrate dev   # فقط بار اول
-npm run dev              # http://localhost:3000 (health: /health)
+npm run dev
 ```
 
-**۲. کلاینت:**
+**۲. اپ** — http://localhost:5173
 
 ```bash
 cd client
 npm install
-npm run dev              # http://localhost:5173
+npm run dev
 ```
 
-مرورگر را باز کن، ثبت‌نام کن (اولین کاربر)، تسک بساز. فرانت از پروکسی Vite به
-`localhost:3000` وصل می‌شود؛ نیازی به تنظیم `VITE_API_URL` در لوکال نیست.
+مرورگر را باز کن، **ثبت‌نام** کن و تسک بساز. در لوکال فرانت از پروکسی Vite به سرور وصل می‌شود و نیازی به تنظیم `VITE_API_URL` نیست.
 
-## بیلد APK از گیت‌هاب
-
-1. سکرت `VITE_API_URL` را در Settings → Secrets بده (مثلا `https://api.doinow.ir/api/v1`).
-2. پوش به `main` → ورک‌فلو `Android APK` اجرا می‌شود.
-3. فایل `Doinow-debug-apk` را از Artifacts دانلود و روی گوشی نصب کن.
-
-لوکال هم می‌توانی خروجی وب را بسازی و سینک کنی:
+### دستورهای پرکاربرد
 
 ```bash
 cd client
-npm run build
-npx cap sync android
+npm test            # تست‌ها (vitest)
+npm run build       # خروجی وب
+npx cap sync        # سینک وب به اندروید و iOS
 ```
 
-## بردن روی سرور (بعدا)
+---
 
-1. DNS: رکورد `A` برای `api.doinow.ir` به آی‌پی VPS.
-2. روی VPS (اوبونتو + داکر): `git clone` در `/opt/doinow`، ساخت `server/.env`
-   از روی `.env.example` با `JWT_SECRET` واقعی و `DATABASE_URL=file:/data/prod.db`.
-3. `docker compose up -d --build` — Caddy خودش HTTPS می‌گیرد.
-4. ورک‌فلو `deploy-server` را فعال کن (کامنت‌های `on:` را بردار) و سکرت‌های
-   `VPS_HOST / VPS_USER / VPS_SSH_KEY` را بده.
+## 🔑 سکرت‌های گیت‌هاب
 
-## نکات
+در **Settings → Secrets and variables → Actions** این‌ها را بگذار:
 
-- تقویم: ذخیره میلادی (استاندارد)، نمایش اصلی شمسی + زیرنویس میلادی.
-- آفلاین: تغییرات بدون اینترنت در صف می‌ماند و با وصل شدن سینک می‌شود.
-- بکاپ: از تنظیمات اپ «دانلود بکاپ» بگیر (JSON).
-- دیتابیس لوکال: `server/prisma/dev.db` (کامیت نمی‌شود).
+| سکرت | مقدار نمونه | کاربرد |
+| --- | --- | --- |
+| `VITE_API_URL` | `https://api.doinow.ir/api/v1` | آدرس API که اپ موبایل به آن وصل می‌شود |
+| `VPS_HOST` / `VPS_USER` / `VPS_SSH_KEY` | — | دیپلوی خودکار سرور (اختیاری، بعدا) |
+
+---
+
+## 🖥️ بردن سرور روی VPS (بعدا)
+
+1. رکورد `A` برای `api.doinow.ir` به آی‌پی سرور بده.
+2. روی اوبونتو + داکر، ریپو را در `/opt/doinow` کلون کن و `server/.env` را از روی `server/.env.example` بساز (`JWT_SECRET` واقعی + `DATABASE_URL=file:/data/prod.db`).
+3. اجرا:
+   ```bash
+   docker compose up -d --build
+   ```
+   Caddy خودش HTTPS می‌گیرد.
+4. برای دیپلوی خودکار، کامنت‌های `on:` در `.github/workflows/deploy-server.yml` را بردار و سکرت‌های VPS را بده.
+
+---
+
+## 🗂️ ساختار ریپو
+
+```
+doinow/
+├── client/                 # فرانت (React + Vite + TS + Tailwind + Zustand)
+│   ├── src/                # صفحات، کامپوننت‌ها، استور، موتور تکرار
+│   ├── android/            # پروژه اندروید (com.doinow.app)
+│   └── ios/                # پروژه iOS (بدون امضا)
+├── server/                 # بک‌اند (Node + Fastify + Prisma + SQLite)
+├── infra/Caddyfile         # ریورس‌پراکسی api.doinow.ir
+├── docker-compose.yml      # api + caddy برای سرور
+└── .github/workflows/      # بیلد APK، بیلد iOS، دیپلوی سرور
+```
+
+---
+
+## 🗺️ نقشه راه
+
+- [x] موتور تکرار پیشرفته + تست
+- [x] رابط موبایل شبیه Any.do + تم تیره
+- [x] تقویم هفته‌ای ساعتی + سورت/فیلتر
+- [x] بیلد خودکار APK و iOS در گیت‌هاب
+- [ ] امضای IPA با حساب Apple Developer
+- [ ] ویجت اندروید و آیکون اختصاصی نهایی
+- [ ] اشتراک‌گذاری لیست‌ها
+
+---
+
+## 📄 لایسنس
+
+MIT — استفاده شخصی آزاد است.
+</div>
