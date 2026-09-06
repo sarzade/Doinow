@@ -3,7 +3,7 @@ name: Deploy server to VPS
 # فعلا غیرفعال تا وقتی سرور آماده شد؛ بعدا با برداشتن کامنت‌ها فعال می‌شود.
 # on:
 #   push:
-#     branches: [main]
+#     branches: [main, master]
 #     paths:
 #       - 'server/**'
 #       - 'docker-compose.yml'

@@ -7,7 +7,7 @@ name: Release (APK + iOS)
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
     paths:
       - 'client/**'
       - '.github/workflows/release.yml'
