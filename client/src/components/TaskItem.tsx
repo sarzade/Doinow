@@ -18,12 +18,15 @@ const PRIORITY_STYLE: Record<Priority, { dot: string; label: string }> = {
 interface Props {
   task: Task;
   listTitle?: string;
+  /** تاریخ نمایشی وقوع (برای تسک تکرارشونده) — پیش‌فرض dueDate تسک */
+  dateISO?: string | null;
   onToggle: () => void;
   onOpen: () => void;
 }
 
-export default function TaskItem({ task, listTitle, onToggle, onOpen }: Props) {
-  const overdue = !task.isDone && isOverdue(task.dueDate);
+export default function TaskItem({ task, listTitle, dateISO, onToggle, onOpen }: Props) {
+  const shownDue = dateISO !== undefined ? dateISO : task.dueDate;
+  const overdue = !task.isDone && isOverdue(shownDue);
   const doneCount = task.subtasks.filter((s) => s.isDone).length;
 
   return (
@@ -66,10 +69,10 @@ export default function TaskItem({ task, listTitle, onToggle, onOpen }: Props) {
             className={`inline-block h-2 w-2 rounded-full ${PRIORITY_STYLE[task.priority].dot}`}
             title={PRIORITY_STYLE[task.priority].label}
           />
-          {task.dueDate && (
+          {shownDue && (
             <span className={overdue ? 'font-medium text-red-600 dark:text-red-400' : ''}>
-              {formatJalali(task.dueDate)}
-              <span className="text-gray-400"> ({formatGregorianSmall(task.dueDate)})</span>
+              {formatJalali(shownDue)}
+              <span className="text-gray-400"> ({formatGregorianSmall(shownDue)})</span>
             </span>
           )}
           {task.reminderAt && <span>یادآور {formatTimeFa(task.reminderAt)}</span>}

@@ -7,29 +7,29 @@ interface Props {
 
 const ITEMS: { id: Tab; label: string; icon: string }[] = [
   {
-    id: 'today',
-    label: 'امروز',
-    icon: 'M12 3l2.5 5.3 5.5.7-4 4 1 5.7-5-2.8-5 2.8 1-5.7-4-4 5.5-.7L12 3z',
+    id: 'myday',
+    label: 'روز من',
+    icon: 'M12 4a8 8 0 100 16 8 8 0 000-16zm0 3a5 5 0 110 10 5 5 0 010-10zm0 3a2 2 0 100 4 2 2 0 000-4z',
+  },
+  {
+    id: 'week',
+    label: '۷ روز',
+    icon: 'M5 6h14v13H5zM5 10h14M9 3v4M15 3v4M9 13h3M9 16h5',
+  },
+  {
+    id: 'all',
+    label: 'همه',
+    icon: 'M5 12.5l4.5 4.5L19 7.5',
   },
   {
     id: 'lists',
     label: 'لیست‌ها',
-    icon: 'M4 6h16M4 12h16M4 18h10',
+    icon: 'M4 4h7v7H4zM13 4h7v4h-7zM13 11h7v9h-7zM4 14h7v6H4z',
   },
   {
     id: 'calendar',
     label: 'تقویم',
-    icon: 'M5 5h14v13H5zM5 9h14M9 3v4M15 3v4',
-  },
-  {
-    id: 'search',
-    label: 'جستجو',
-    icon: 'M11 5a6 6 0 104.2 10.3L20 20l1-1-4.7-4.8A6 6 0 0011 5zm0 2a4 4 0 110 8 4 4 0 010-8z',
-  },
-  {
-    id: 'settings',
-    label: 'تنظیمات',
-    icon: 'M12 8.5A3.5 3.5 0 1012 15.5 3.5 3.5 0 0012 8.5zM20 12a8 8 0 01-.2 1.7l2 1.6-2 3.4-2.4-1a8 8 0 01-2.9 1.7L14 21h-4l-.5-2.6a8 8 0 01-2.9-1.7l-2.4 1-2-3.4 2-1.6A8 8 0 014 12c0-.6.1-1.1.2-1.7l-2-1.6 2-3.4 2.4 1a8 8 0 012.9-1.7L10 3h4l.5 2.6a8 8 0 012.9 1.7l2.4-1 2 3.4-2 1.6c.1.6.2 1.1.2 1.7z',
+    icon: 'M5 6h14v13H5zM5 10h14M9 3v4M15 3v4',
   },
 ];
 
@@ -44,7 +44,7 @@ export default function BottomNav({ tab, onChange }: Props) {
               key={it.id}
               type="button"
               onClick={() => onChange(it.id)}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] ${
+              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-bold ${
                 active ? 'text-brand-600 dark:text-brand-100' : 'text-gray-400'
               }`}
             >

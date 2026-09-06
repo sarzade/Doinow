@@ -27,7 +27,7 @@ import { cancelReminder, scheduleReminder } from '../lib/notify';
 import { effectiveRule } from '../lib/recurrence';
 import { shiftByRecurrence } from '../lib/jalali';
 
-export type Tab = 'today' | 'lists' | 'calendar' | 'search' | 'settings';
+export type Tab = 'myday' | 'week' | 'all' | 'lists' | 'calendar' | 'settings';
 export type Theme = 'light' | 'dark';
 
 type OpKind =
@@ -137,6 +137,10 @@ interface Store {
   createTask: (input: TaskInput) => Promise<void>;
   updateTask: (id: string, patch: Partial<TaskInput> & { isDone?: boolean }) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
+  /** تکمیل یک وقوع مشخص از تسک تکرارشونده */
+  completeOccurrence: (id: string, occurrenceISO: string) => Promise<void>;
+  /** افزودن/حذف از «روز من» */
+  toggleMyDay: (id: string) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   toggleSubtask: (taskId: string, subtaskId: string) => Promise<void>;
   exportBackup: () => void;
@@ -265,15 +269,15 @@ export const useStore = create<Store>((set, get) => {
     error: null,
     pendingOps: loadOutbox().length,
 
-    tab: 'today',
-    theme: 'light',
+    tab: 'myday',
+    theme: 'dark',
 
     boot: async () => {
       const savedTheme = (() => {
         try {
-          return (localStorage.getItem(THEME_KEY) as Theme | null) ?? 'light';
+          return (localStorage.getItem(THEME_KEY) as Theme | null) ?? 'dark';
         } catch {
-          return 'light' as Theme;
+          return 'dark' as Theme;
         }
       })();
       applyTheme(savedTheme);
@@ -563,6 +567,20 @@ export const useStore = create<Store>((set, get) => {
           recurrence: task.recurrence as Recurrence,
           subtasks: task.subtasks.map((s) => ({ title: s.title })),
         });
+      }
+    },
+
+    completeOccurrence: async (id, occurrenceISO) => {
+      await get().updateTask(id, { lastCompletedAt: occurrenceISO });
+    },
+
+    toggleMyDay: async (id) => {
+      const task = get().tasks.find((t) => t.id === id);
+      if (!task) return;
+      if (task.myDay) {
+        await get().updateTask(id, { myDay: false, myDayDate: null });
+      } else {
+        await get().updateTask(id, { myDay: true, myDayDate: new Date().toISOString() });
       }
     },
 
