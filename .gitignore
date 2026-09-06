@@ -4,6 +4,7 @@ dist/
 
 # Capacitor / Android
 client/dist/
+client/build/
 client/android/app/build/
 client/android/.gradle/
 client/android/local.properties
