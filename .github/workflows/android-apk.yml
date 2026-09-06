@@ -1,11 +1,7 @@
 name: Android APK
 
+# بیلد تکی اندروید (دستی) — پایپ‌لاین خودکار push در release.yml است.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'client/**'
-      - '.github/workflows/android-apk.yml'
   workflow_dispatch:
 
 jobs:

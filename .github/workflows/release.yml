@@ -1,11 +1,16 @@
 name: Release (APK + iOS)
 
-# انتشار دستی نسخه جدید:
-# از تب Actions گزینه Release را اجرا کن.
-# نسخه به‌صورت خودکار یکی زیاد می‌شود: v1.0، v1.1، v1.2 ...
-# هر دو فایل به Release الصاق می‌شوند + یادداشت انتشار فارسی.
+# پایپ‌لاین اصلی انتشار — خودکار:
+# هر پوش به main (در client/**) → نسخه بعدی v1.x → بیلد اندروید + iOS → انتشار Release.
+# برای بیلد بدون انتشار، آخر پیام کامیت بنویس: [skip release]
+# اجرای دستی هم از تب Actions ممکن است (با یادداشت اختیاری).
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
     inputs:
       notes:
@@ -146,6 +151,9 @@ jobs:
 
   release:
     needs: [version, build-android, build-ios]
+    # بیلد دستی تکی از ورک‌فلوهای جدا انجام می‌شود؛ اینجا فقط وقتی هر دو بیلد سبزند.
+    # با [skip release] در پیام کامیت، فقط بیلد ساخته می‌شود و Release نمی‌آید.
+    if: "!contains(github.event.head_commit.message, '[skip release]')"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
