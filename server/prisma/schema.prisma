@@ -1,0 +1,73 @@
+// لوکال: SQLite (بدون نیاز به داکر)
+// سرور نهایی: همین اسکیما با provider=postgresql کار می‌کند (tags/subtasks به‌صورت JSON ذخیره شده‌اند تا قابل حمل باشند)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passHash     String
+  displayName  String
+  createdAt    DateTime       @default(now())
+  lists        List[]
+  tasks        Task[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model List {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  color     String   @default("#7c3aed")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tasks     Task[]
+
+  @@index([userId])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listId      String?
+  list        List?     @relation(fields: [listId], references: [id], onDelete: SetNull)
+  title       String
+  note        String    @default("")
+  dueDate     DateTime?
+  reminderAt  DateTime?
+  priority    Int       @default(4)
+  tagsJson    String    @default("[]")
+  isDone      Boolean   @default(false)
+  recurrence  String    @default("none")
+  // قانون تکرار ساخت‌یافته (JSON) — نسخه پیشرفته جایگزین recurrence ساده می‌شود
+  recurrenceJson String   @default("{}")
+  lastCompletedAt DateTime?
+  myDay       Boolean   @default(false)
+  myDayDate   DateTime?
+  subtasksJson String   @default("[]")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([userId])
+  @@index([userId, updatedAt])
+}

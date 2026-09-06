@@ -1,0 +1,29 @@
+{
+  "name": "doinow-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.1.0",
+    "@fastify/jwt": "^9.1.0",
+    "@prisma/client": "^6.4.0",
+    "bcryptjs": "^3.0.2",
+    "fastify": "^5.2.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.13.0",
+    "prisma": "^6.4.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.7.3"
+  }
+}

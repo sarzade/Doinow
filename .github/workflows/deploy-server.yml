@@ -1,0 +1,32 @@
+name: Deploy server to VPS
+
+# فعلا غیرفعال تا وقتی سرور آماده شد؛ بعدا با برداشتن کامنت‌ها فعال می‌شود.
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - 'server/**'
+#       - 'docker-compose.yml'
+#       - 'infra/**'
+#       - '.github/workflows/deploy-server.yml'
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/doinow
+            git pull origin main
+            docker compose up -d --build
+            docker compose ps

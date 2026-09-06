@@ -1,0 +1,27 @@
+services:
+  api:
+    build: ./server
+    restart: unless-stopped
+    env_file: ./server/.env
+    volumes:
+      - doinow-data:/data
+    expose:
+      - '3000'
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+
+volumes:
+  doinow-data:
+  caddy-data:
+  caddy-config:

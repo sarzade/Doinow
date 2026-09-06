@@ -1,0 +1,57 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build web
+        run: npm run build
+        env:
+          # در Settings گیت‌هاب مقدار بده، مثلا https://api.doinow.ir/api/v1
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Capacitor sync
+        run: npx cap sync android
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
+        working-directory: client/android
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Doinow-debug-apk
+          path: client/android/app/build/outputs/apk/debug/app-debug.apk

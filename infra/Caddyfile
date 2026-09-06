@@ -1,0 +1,9 @@
+# روی سرور: api.doinow.ir به‌صورت خودکار HTTPS می‌گیرد.
+# ایمیل را برای Let's Encrypt عوض کن.
+{
+	email admin@doinow.ir
+}
+
+api.doinow.ir {
+	reverse_proxy api:3000
+}
