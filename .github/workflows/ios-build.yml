@@ -1,0 +1,62 @@
+name: iOS build (unsigned)
+
+# بیلد iOS بدون امضا روی رانر macOS.
+# خروجی: اپ شبیه‌ساز (.app) + تضمین سلامت کامپایل.
+# نصب روی آیفون واقعی به حساب Apple Developer و امضا نیاز دارد (فعلا نداریم).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build web
+        run: npm run build
+        env:
+          # در Settings گیت‌هاب مقدار بده، مثلا https://api.doinow.ir/api/v1
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Capacitor sync iOS
+        run: npx cap sync ios
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer && xcodebuild -version
+
+      - name: Build for Simulator (no signing)
+        run: >
+          xcodebuild
+          -workspace ios/App/App.xcworkspace
+          -scheme App
+          -configuration Debug
+          -sdk iphonesimulator
+          -derivedDataPath build/derivedData
+          CODE_SIGNING_ALLOWED=NO
+          build
+
+      - name: Upload Simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Doinow-ios-simulator
+          path: client/build/derivedData/Build/Products/Debug-iphonesimulator/App.app
