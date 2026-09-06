@@ -9,6 +9,24 @@ client/android/.gradle/
 client/android/local.properties
 client/android/capacitor-cordova-android-plugins/
 
+# Capacitor / iOS (پوشه ios کامیت می‌شود، ولی بیلد و Pods نه)
+client/ios/App/Pods/
+client/ios/App/build/
+client/ios/App/DerivedData/
+**/xcuserdata/
+*.xcuserstate
+*.xccheckout
+
+# Signing secrets — هیچ‌وقت کامیت نشوند
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+*.cer
+GoogleService-Info.plist
+google-services.json
+.env*.local
+
 # Server
 server/dist/
 server/prisma/*.db*
