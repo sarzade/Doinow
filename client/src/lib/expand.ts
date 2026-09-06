@@ -1,5 +1,6 @@
 import type { Task } from './api';
 import { effectiveRule, occurrences } from './recurrence';
+import type { FilterBy, SortBy } from '../store/useStore';
 
 export interface OccurrenceItem {
   task: Task;
@@ -66,4 +67,35 @@ export function expandDay(tasks: Task[], day: Date, now = new Date()): Occurrenc
 /** تسک‌های بی‌تاریخ (یه روز) */
 export function somedayTasks(tasks: Task[]): Task[] {
   return tasks.filter((t) => !t.isDone && !t.dueDate && !effectiveRule(t));
+}
+
+/** اعمال مرتب‌سازی و فیلتر نمایشی (منوی ⋯) روی وقوع‌ها */
+export function applyOccOptions(
+  items: OccurrenceItem[],
+  sort: SortBy,
+  filter: FilterBy,
+): OccurrenceItem[] {
+  let out = items;
+  if (filter === 'overdue') out = out.filter((i) => i.overdue);
+  else if (filter === 'recurring') out = out.filter((i) => effectiveRule(i.task) !== null);
+
+  const arr = [...out];
+  if (sort === 'priority') {
+    arr.sort((a, b) => {
+      if (a.task.priority !== b.task.priority) return a.task.priority - b.task.priority;
+      const at = a.date ? a.date.getTime() : Infinity;
+      const bt = b.date ? b.date.getTime() : Infinity;
+      return at - bt;
+    });
+  } else if (sort === 'alpha') {
+    arr.sort((a, b) => a.task.title.localeCompare(b.task.title, 'fa'));
+  } else {
+    arr.sort((a, b) => {
+      const at = a.date ? a.date.getTime() : Infinity;
+      const bt = b.date ? b.date.getTime() : Infinity;
+      if (at !== bt) return at - bt;
+      return a.task.priority - b.task.priority;
+    });
+  }
+  return arr;
 }

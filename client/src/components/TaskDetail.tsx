@@ -10,6 +10,7 @@ import ReminderWheel from './ReminderWheel';
 interface Props {
   task: Task | null; // null = ساخت جدید
   defaultListId?: string | null;
+  presetDue?: string | null;
   onClose: () => void;
 }
 
@@ -24,12 +25,12 @@ function uid(): string {
 }
 
 /** صفحه جزئیات تسک تمام‌صفحه مثل Any.do (بدون مکان) */
-export default function TaskDetail({ task, defaultListId, onClose }: Props) {
+export default function TaskDetail({ task, defaultListId, presetDue, onClose }: Props) {
   const { lists, createTask, updateTask, deleteTask, toggleSubtask } = useStore();
   const [title, setTitle] = useState(task?.title ?? '');
   const [note, setNote] = useState(task?.note ?? '');
   const [listId, setListId] = useState<string | null>(task?.listId ?? defaultListId ?? null);
-  const [dueDate, setDueDate] = useState<string | null>(task?.dueDate ?? null);
+  const [dueDate, setDueDate] = useState<string | null>(task?.dueDate ?? presetDue ?? null);
   const [reminderAt, setReminderAt] = useState<string | null>(task?.reminderAt ?? null);
   const [priority, setPriority] = useState<Priority>(task?.priority ?? 4);
   const [tags, setTags] = useState((task?.tags ?? []).join('، '));

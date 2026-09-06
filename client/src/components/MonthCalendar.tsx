@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Task } from '../lib/api';
+import { expandRange } from '../lib/expand';
 import {
   FA_MONTHS,
   gregorianToJalali,
@@ -34,10 +35,14 @@ export default function MonthCalendar({ tasks, onSelectDay, selectedDay }: Props
 
   const countByDay = useMemo(() => {
     const map = new Map<number, number>();
-    for (const t of tasks) {
-      if (!t.dueDate || t.isDone) continue;
-      const d = new Date(t.dueDate);
-      const j = gregorianToJalali(d);
+    // وقوع‌های واقعی ماه (شامل تسک‌های تکرارشونده) — بدون انجام‌شده‌ها
+    const from = jalaliToDate(jy, jm, 1);
+    from.setHours(0, 0, 0, 0);
+    const to = jalaliToDate(jy, jm, monthLength(jy, jm));
+    to.setHours(23, 59, 59, 999);
+    for (const it of expandRange(tasks, from, to)) {
+      if (!it.date) continue;
+      const j = gregorianToJalali(it.date);
       if (j.jy === jy && j.jm === jm) map.set(j.jd, (map.get(j.jd) ?? 0) + 1);
     }
     return map;

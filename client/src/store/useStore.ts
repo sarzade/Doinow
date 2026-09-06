@@ -23,12 +23,14 @@ import {
   getToken,
   setToken,
 } from '../lib/api';
-import { cancelReminder, scheduleReminder } from '../lib/notify';
+import { cancelReminder, rescheduleRecurring, scheduleReminder } from '../lib/notify';
 import { effectiveRule } from '../lib/recurrence';
 import { shiftByRecurrence } from '../lib/jalali';
 
 export type Tab = 'myday' | 'week' | 'all' | 'lists' | 'calendar' | 'settings';
 export type Theme = 'light' | 'dark';
+export type SortBy = 'date' | 'priority' | 'alpha';
+export type FilterBy = 'all' | 'overdue' | 'recurring';
 
 type OpKind =
   | 'create-task'
@@ -119,6 +121,8 @@ interface Store {
 
   tab: Tab;
   theme: Theme;
+  sortBy: SortBy;
+  filterBy: FilterBy;
 
   boot: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
@@ -128,6 +132,9 @@ interface Store {
 
   setTab: (t: Tab) => void;
   toggleTheme: () => void;
+  setSort: (s: SortBy) => void;
+  setFilter: (f: FilterBy) => void;
+  clearDone: () => Promise<void>;
   syncNow: () => Promise<void>;
 
   createList: (title: string, color: string) => Promise<void>;
@@ -271,6 +278,14 @@ export const useStore = create<Store>((set, get) => {
 
     tab: 'myday',
     theme: 'dark',
+    sortBy: (() => {
+      try {
+        return (localStorage.getItem('doinow_sort') as SortBy | null) ?? 'date';
+      } catch {
+        return 'date' as SortBy;
+      }
+    })(),
+    filterBy: 'all',
 
     boot: async () => {
       const savedTheme = (() => {
@@ -366,6 +381,34 @@ export const useStore = create<Store>((set, get) => {
 
     setTab: (tab) => set({ tab }),
 
+    setSort: (sortBy) => {
+      try {
+        localStorage.setItem('doinow_sort', sortBy);
+      } catch {
+        /* نادیده */
+      }
+      set({ sortBy });
+    },
+
+    setFilter: (filterBy) => set({ filterBy }),
+
+    clearDone: async () => {
+      const done = get().tasks.filter((t) => t.isDone);
+      if (done.length === 0) return;
+      set({ syncing: true });
+      for (const t of done) {
+        try {
+          await apiDeleteTask(t.id);
+          void cancelReminder(t.id);
+        } catch {
+          /* بهترین تلاش */
+        }
+      }
+      set((s) => ({ tasks: s.tasks.filter((t) => !t.isDone) }));
+      persist();
+      await get().syncNow();
+    },
+
     toggleTheme: () => {
       const next: Theme = get().theme === 'dark' ? 'light' : 'dark';
       applyTheme(next);
@@ -386,6 +429,7 @@ export const useStore = create<Store>((set, get) => {
           offline: false,
         });
         persist();
+        void rescheduleRecurring(get().tasks);
       } catch (e) {
         set({
           syncing: false,
@@ -488,6 +532,7 @@ export const useStore = create<Store>((set, get) => {
         set((s) => ({ tasks: [created, ...s.tasks] }));
         if (created.reminderAt)
           void scheduleReminder(created.id, created.title, new Date(created.reminderAt));
+        void rescheduleRecurring(get().tasks);
         persist();
       } catch (e) {
         if (!isNetworkError(e)) {
@@ -529,6 +574,7 @@ export const useStore = create<Store>((set, get) => {
         if (updated.reminderAt && !updated.isDone)
           void scheduleReminder(updated.id, updated.title, new Date(updated.reminderAt));
         else void cancelReminder(id);
+        void rescheduleRecurring(get().tasks);
         persist();
       } catch (e) {
         if (!isNetworkError(e)) {

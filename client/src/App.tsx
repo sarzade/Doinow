@@ -4,6 +4,8 @@ import MonthCalendar from './components/MonthCalendar';
 import QuickAddBar from './components/QuickAddBar';
 import TaskDetail from './components/TaskDetail';
 import TaskItem from './components/TaskItem';
+import ViewMenu from './components/ViewMenu';
+import WeekCalendar from './components/WeekCalendar';
 import type { Task } from './lib/api';
 import { serverBase } from './lib/api';
 import {
@@ -14,13 +16,16 @@ import {
   startOfDay,
   toFaDigits,
 } from './lib/jalali';
-import { expandDay, expandRange, somedayTasks, type OccurrenceItem } from './lib/expand';
+import { expandDay, expandRange, somedayTasks, applyOccOptions, type OccurrenceItem } from './lib/expand';
 import { effectiveRule } from './lib/recurrence';
 import { useStore } from './store/useStore';
 
 const LIST_COLORS = ['#7c3aed', '#0ea5e9', '#22c55e', '#f59e0b', '#ef4444', '#ec4899'];
 
-type DetailState = { mode: 'closed' } | { mode: 'new'; listId: string | null } | { mode: 'edit'; task: Task };
+type DetailState =
+  | { mode: 'closed' }
+  | { mode: 'new'; listId: string | null; presetDue?: string | null }
+  | { mode: 'edit'; task: Task };
 
 export default function App() {
   const s = useStore();
@@ -99,14 +104,15 @@ export default function App() {
             {s.syncing ? (
               <span className="text-[11px] text-gray-400">سینک…</span>
             ) : (
-              <button
-                type="button"
-                onClick={() => void s.syncNow()}
-                className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] text-gray-500 dark:bg-gray-800 dark:text-gray-300"
-              >
-                سینک
-              </button>
+            <button
+              type="button"
+              onClick={() => void s.syncNow()}
+              className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] text-gray-500 dark:bg-gray-800 dark:text-gray-300"
+            >
+              سینک
+            </button>
             )}
+            <ViewMenu />
             <button
               type="button"
               onClick={() => s.setTab('settings')}
@@ -154,6 +160,7 @@ export default function App() {
             setCalDay={setCalDay}
             onToggle={toggleSmart}
             onOpen={openEdit}
+            onCreateAt={(d) => setDetail({ mode: 'new', listId: null, presetDue: d.toISOString() })}
           />
         )}
         {s.tab === 'settings' && <SettingsView />}
@@ -173,7 +180,12 @@ export default function App() {
       <BottomNav tab={s.tab === 'settings' ? 'myday' : s.tab} onChange={s.setTab} />
 
       {detail.mode === 'new' && (
-        <TaskDetail task={null} defaultListId={detail.listId} onClose={() => setDetail({ mode: 'closed' })} />
+        <TaskDetail
+          task={null}
+          defaultListId={detail.listId}
+          presetDue={detail.presetDue ?? null}
+          onClose={() => setDetail({ mode: 'closed' })}
+        />
       )}
       {detail.mode === 'edit' && (
         <TaskDetail
@@ -202,9 +214,14 @@ function OccList({
   onOpen: (t: Task) => void;
 }) {
   if (items.length === 0) return <p className="py-6 text-center text-sm text-gray-400">{empty}</p>;
+  const sortBy = useStore((x) => x.sortBy);
+  const filterBy = useStore((x) => x.filterBy);
+  const shown = applyOccOptions(items, sortBy, filterBy);
+  if (shown.length === 0)
+    return <p className="py-6 text-center text-sm text-gray-400">با این فیلتر چیزی نیست.</p>;
   return (
     <div className="space-y-2">
-      {items.map((it) => (
+      {shown.map((it) => (
         <TaskItem
           key={it.task.id + (it.date ? it.date.toISOString() : 'nodate')}
           task={it.task}
@@ -603,33 +620,64 @@ function CalendarView({
   setCalDay,
   onToggle,
   onOpen,
+  onCreateAt,
 }: {
   listName: (id: string | null) => string | undefined;
   calDay: string | null;
   setCalDay: (d: string | null) => void;
   onToggle: (item: OccurrenceItem) => void;
   onOpen: (t: Task) => void;
+  onCreateAt: (d: Date) => void;
 }) {
   const tasks = useStore((x) => x.tasks);
+  const lists = useStore((x) => x.lists);
+  const [mode, setMode] = useState<'month' | 'week'>('week');
   const calTasks = useMemo(() => {
     if (!calDay) return [];
     return expandDay(tasks, new Date(calDay));
   }, [tasks, calDay]);
 
+  const colorOf = (listId: string | null): string =>
+    (listId ? lists.find((l) => l.id === listId)?.color : null) ?? '#7c3aed';
+
   return (
     <section className="space-y-3">
-      <MonthCalendar tasks={tasks} selectedDay={calDay} onSelectDay={setCalDay} />
-      {calDay && (
-        <div>
-          <h3 className="mb-2 text-sm font-bold">کارهای {formatJalali(calDay)}</h3>
-          <OccList
-            items={calTasks}
-            listName={listName}
-            empty="در این روز کاری ثبت نشده."
-            onToggle={onToggle}
-            onOpen={onOpen}
-          />
-        </div>
+      <div className="grid grid-cols-2 gap-1 rounded-2xl bg-gray-200/70 p-1 dark:bg-gray-800">
+        {(
+          [
+            { id: 'week', label: 'هفته‌ای' },
+            { id: 'month', label: 'ماهانه' },
+          ] as const
+        ).map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setMode(m.id)}
+            className={`rounded-xl py-2 text-sm font-bold ${mode === m.id ? 'bg-white shadow dark:bg-gray-900' : 'text-gray-500'}`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'week' ? (
+        <WeekCalendar tasks={tasks} listColor={colorOf} onOpenTask={onOpen} onCreateAt={onCreateAt} />
+      ) : (
+        <>
+          <MonthCalendar tasks={tasks} selectedDay={calDay} onSelectDay={setCalDay} />
+          {calDay && (
+            <div>
+              <h3 className="mb-2 text-sm font-bold">کارهای {formatJalali(calDay)}</h3>
+              <OccList
+                items={calTasks}
+                listName={listName}
+                empty="در این روز کاری ثبت نشده."
+                onToggle={onToggle}
+                onOpen={onOpen}
+              />
+            </div>
+          )}
+        </>
       )}
     </section>
   );
